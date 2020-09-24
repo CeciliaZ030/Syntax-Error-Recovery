@@ -14,6 +14,12 @@ using std::noskipws; //?
 char token_image[128];
 string image;
 
+std::string getImage(){
+    
+    return " \"" + image + "\"";
+    
+}
+
 token scan() {
 
 	/* next available char; extra (int) width accommodates EOF */
