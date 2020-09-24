@@ -105,7 +105,7 @@ string stmt_list() {
       case t_write:
       case t_read:
       case t_if:
-      case t_do:{
+      case t_eof:{
         string line1 = "";
         line1 = spaceAfter(line1, spaceCount);
         line1 += "("+stmt();
@@ -115,14 +115,13 @@ string stmt_list() {
         spaceCount--;
         return line1;
       }
-      case t_eof:
-        spaceCount--;
-        return "\n";
+      
     default:
       spaceCount--;
       return "\n";
     }
 }
+
 
 // S    →     id := E  |  read id  |  write E  |  if C SL end  |  while C SL end
 string stmt() {
