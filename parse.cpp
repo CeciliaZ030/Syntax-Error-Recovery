@@ -47,6 +47,8 @@ string program(){
             case t_read:
             case t_write:
             case t_eof:{
+                
+                spaceNum++;
                 string line1 = "(program \n";
                 // postIndent
                 line1 += "[";
@@ -57,13 +59,14 @@ string program(){
                 
                 match(t_eof);
                 return line1 + ")\n";
+                break;
             }
             default:
             return "program";
                 
         }
     } catch(string exception){
-        cout << "unexpected input in the program" << endl;
+        cout << "unexpected input in program" << endl;
         return "";
     }
 }
@@ -81,7 +84,6 @@ string stmt_list(){
                 case t_if:
                 case t_eof:{
                 
-                    //
                     string line1 = "";
                     // line1 += postIndent
                     line1 += "(" + stmt ();
@@ -152,13 +154,33 @@ string stmt(){
                 return "write " + line1 + ")\n";
                 break;
             }
-            
+            // if C SL end
             case t_if:{
-                return "";
-            }
+                // C    →     E ro E
                 
+                match(t_if);
+                string line1 = "(if \n";
+                // line1 = postIndent(line1, spaceNum);
+                line1 += expr();
+                // line1 = postIndent(line1, spaceNum);
+                string line2  = stmt_list();
+                // line2 = postIndent(line2, spaceNum);
+                match(t_end);
+                spaceNum--;
+                return line1 +"[\n"+ line2 + "])\n";
+            }
+            //  while C SL end
             case t_while:{
-                return "";
+                match(t_if);
+                string line1 = "(if \n";
+                // line1 = postIndent(line1, spaceNum);
+                line1 += expr();
+                // line1 = postIndent(line1, spaceNum);
+                string line2  = stmt_list();
+                // line2 = postIndent(line2, spaceNum);
+                match(t_end);
+                spaceNum--;
+                return line1 +"[\n"+ line2 + "])\n";
             }
                 
             default:
