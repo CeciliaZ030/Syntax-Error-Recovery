@@ -432,6 +432,7 @@ string mul_op() {
 }
 
 int main() {
+    
     input_token = scan();
     cout << program();
     return 0;
