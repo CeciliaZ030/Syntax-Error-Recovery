@@ -1,2 +1,2 @@
-read a read b write ( a / b )
+read a read b write ( a / b ) shabi
 
