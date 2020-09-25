@@ -9,7 +9,8 @@ using std::string;
 using std::cin;
 using std::cout;
 using std::endl;
-using std::noskipws; //?
+using std::noskipws;
+
 
 char token_image[100];
 string image;
@@ -19,27 +20,27 @@ std::string getImage(){
 }
 
 token scan() {
-    // next available char; extra (int) width accommodates EOF
     static char c = ' ';
-    // index into token_image
-    int i = 0;
-    
+        /* next available char; extra (int) width accommodates EOF */
+    int i = 0;              /* index into token_image */
+    /* skip white space */
+    /*if (!cin.get(c)) return t_eof;
+    while (isspace(c)) {
+        if (!cin.get(c)) return t_eof;
+    }*/
 	do{
 	if (!cin.get(c)) return t_eof;
-	} while(isspace(c));
-    if (isalpha(c)) {
+	}while(isspace(c));
+    if (isalpha(c)) { //TODO
         do {
             token_image[i++] = c;
             if(!cin.get(c)) break;
         } while (isalpha(c) || isdigit(c) || c == '_');
         token_image[i] = '\0';
-        
-        cout << "token image: " << token_image << endl;
-
-        if(token_image == string("read"))
-            return t_read;
-        else if (token_image == string("write"))
-            return t_write;
+        if(token_image==string("read")) return t_read;
+        else if (token_image==string("write")) return t_write;
+        else if (token_image==string("do")) return t_do;
+        else if (token_image==string("eof")) return t_eof;
         else if (token_image == string("if"))
             return t_if;
         else if (token_image == string("while"))
@@ -71,7 +72,7 @@ token scan() {
         case '/': cin.get(c); return t_div;
         case '(': cin.get(c); return t_lparen;
         case ')': cin.get(c); return t_rparen;
-            
+        //Relation operators added
         case ':':
           cin.get(c);
           if (c == '='){
@@ -99,11 +100,10 @@ token scan() {
             if(c == '='){
               cin.get(c);
                 return t_equal;
-            }
+            }//remove double equal
             cout << "error\n";
         default:
             cout << "error\n";
             exit(1);
     }
 }
-
