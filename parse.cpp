@@ -1,9 +1,9 @@
 #include <iostream>
 #include <ios>
-#include "scan.h"
 #include <cstdlib>
 #include <string>
 
+#include "scan.h"
 
 using std::string;
 using std::cin;
@@ -17,423 +17,398 @@ const char* names[] = {"read", "write", "id", "literal", "gets", "if",
 
 
 static token input_token;
-static int spaceVal = 0;
-static int hasError = 0;
 static string image = "";
+
+// static int spaceVal = 0;
+// static int hasError = 0;
+
 
 void error () {
     cout << "Syntax Error" << endl;
     exit (1);
 }
 
-string match (token expected) {
-    if (input_token == expected) {
-        image = getImage();
-        input_token = scan ();
-    } else {
-        return "match";
-  }
-  return "";
-}
-
-string frontSpace(string str, int tab){
-  for(int i = 0; i <= tab; i++){
-    str = " " + str;
-  }
-  return str;
-}
-
-string backSpace(string str, int tab){
-  for(int i = 0; i <= tab; i++){
-    str += " ";
-  }
-  return str;
-}
-
-string prefix(string str, string tail){
-  if(tail == "")
-      return str;
-  for(int i = 0; i < tail.length(); ++i){
-    if(tail[i] == ' '){
-      return tail.substr(0,i) + " " + str + " "
-        + tail.substr(i+1, tail.length() - i);
-    }
-  }
-  return "prefix error";
-}
-
-int contains(token t, token set[]){
-  int i = 0;
-  while(set[i]){
-    if (t == set[i++]) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-
-
-string program ();
-string stmt_list ();
-string stmt ();
-string condition();
-string expr ();
-string expr_tail();
-string term_tail ();
-string term ();
-string factor_tail ();
-string factor ();
-string relation_op();
-string add_op ();
-string mul_op ();
-
-
-string program() {
-    spaceVal++;
-    try{
-        switch (input_token) {
-            case t_id:
-            case t_read:
-            case t_write:
-            case t_eof:{
-                
-                string line1 = "(program \n" ;
-                line1 = backSpace(line1, spaceVal);
-                line1 += "[";
-                line1 += stmt_list ();
-                match(t_eof);
-                line1 = backSpace(line1, spaceVal);
-                line1 += "]\n";
-                
-                return line1 + ")\n";
-            }
-            default:
-            return "";
+void match (token expected) {
+    cout << "   in match" << endl;
+    if (input_token == expected){
+        cout << "   input_token == expected" << endl;
+        if (input_token == t_id || input_token == t_literal){
+            image = getImage();
+            cout << "   match" << image << endl;
         }
-    } catch (string e){
-      return "";
+        input_token = scan();
+        cout << "   scan next and get " << input_token << endl;
+    } 
+    else{
+        cout << "match";
+        error();
     }
 }
 
-string stmt_list() {
-  switch (input_token) {
-      case t_id:
-      case t_write:{
-          
-          string line1 = "";
-          line1 = backSpace(line1, spaceVal);
-          line1 += "(" + stmt();
-          line1 += stmt_list();
-          line1 = backSpace(line1, spaceVal);
-          line1 += ")\n";
-          spaceVal--;
-          return line1;
-      }
-      case t_read:
-      case t_if:
-      case t_do:{
-        string line1 = "";
-        line1 = backSpace(line1, spaceVal);
-        line1 += "(" + stmt();
-        line1 += stmt_list();
-        line1 = backSpace(line1, spaceVal);
-        line1 += ")\n";
-        spaceVal--;
-        return line1;
-      }
-      case t_eof:{
-          
-          return "\n";
-      }
-        
-    default:
-      spaceVal--;
-      return "\n";
+// string frontSpace(string str, int tab){
+//   for(int i = 0; i <= tab; i++){
+//     str = " " + str;
+//   }
+//   return str;
+// }
+
+// string backSpace(string str, int tab){
+//   for(int i = 0; i <= tab; i++){
+//     str += " ";
+//   }
+//   return str;
+// }
+
+// string prefix(string str, string tail){
+//   if(tail == "")
+//       return str;
+//   for(int i = 0; i < tail.length(); ++i){
+//     if(tail[i] == ' '){
+//       return tail.substr(0,i) + " " + str + " "
+//         + tail.substr(i+1, tail.length() - i);
+//     }
+//   }
+//   return "prefix error";
+// }
+
+// int contains(token t, token set[]){
+//   int i = 0;
+//   while(set[i]){
+//     if (t == set[i++]) {
+//       return 1;
+//     }
+//   }
+//   return 0;
+// }
+
+
+
+AST_node program ();
+std::vector<AST_node> stmt_list ();
+AST_node stmt ();
+AST_node condition();
+AST_node expr ();
+AST_node expr_tail();
+AST_node term_tail (AST_node T);
+AST_node term ();
+AST_node factor_tail (AST_node F);
+AST_node factor ();
+AST_node relation_op();
+AST_node add_op ();
+AST_node mul_op ();
+
+
+AST_node program()
+{
+    AST_node P = AST_node("program");
+    switch (input_token) {
+        case t_id:
+        case t_read:
+        case t_write:
+        case t_eof:{
+            printf ("predict program --> stmt_list eof\n");
+            std::vector<AST_node> SL = stmt_list();
+            match(t_eof);
+            P.children = SL;
+            cout << "YEAH!!!" << endl;
+            return P;
+        }
+        default:
+            cout << "program" << endl;
+            error();
     }
 }
 
-string stmt() {
-  spaceVal++;
-  try{
+std::vector<AST_node> stmt_list()
+{
+    std::vector<AST_node> SL;
+    switch (input_token) {
+        case t_id:
+        case t_read:
+        case t_if:
+        case t_while:
+        case t_write: {
+            printf ("predict stmt_list --> stmt stmt_list\n");
+
+            SL.push_back(stmt());
+            std::vector<AST_node> tail = stmt_list();
+            SL.insert(SL.end(), //TODO: possibly empty tail here
+                      tail.begin(), tail.end());
+            return SL;
+        }
+        case t_eof: {
+            printf("predict stmt_list --> epsilon\n");
+            return {}; //return empty vec
+        }
+        case t_end: {
+            printf ("predict stmt_list --> epsilon (end of if/while stmt_list)\n");
+            return {};
+        }
+        default:
+            cout << "stmt_list" << endl;
+            error();
+    }
+}
+
+AST_node stmt() 
+{
+    AST_node S = AST_node("");
     switch (input_token) {
         case t_id:{
+            printf ("predict stmt --> id_gets expr\n");
             match(t_id);
             match(t_gets);
-            string line1 = "( := (id " + image + ")" + condition();
-            line1 = backSpace(line1, spaceVal);
-            line1 += ")";
-            spaceVal--;
-            return line1;
+            S.value = ":=";
+            S.children = {AST_node("id: " + image), expr()};
+            return S;
         }
-        case t_read:
+        case t_read:{
+            printf ("predict stmt --> read id\n");
             match(t_read);
+            cout << "match(t_id);" << endl;
             match(t_id);
-            spaceVal--;
-            return "read (id" + image +" )\n";
-            
+            S.value = "read";
+            S.children = {AST_node("id: " + image)};
+            return S;
+        }
         case t_write:{
+            printf ("predict stmt --> write expr\n");
             match(t_write);
-            string line1 = condition();
-            line1 = backSpace(line1, spaceVal);
-            spaceVal--;
-            return "(write " + line1 + ")\n";
+            S.value = "write";
+            S.children = {expr()};
+            return S;
         }
         case t_if:{
-              match(t_if);
-              string line1 = "(if \n";
-              line1 = backSpace(line1, spaceVal);
-              line1 += condition();
-              line1 = backSpace(line1, spaceVal);
-              string line2 = stmt_list();
-              line2 = backSpace(line2, spaceVal);
-              spaceVal--;
-            
-              return line1 +"[\n"+ line2 + "])\n";
+            printf ("predict stmt --> if condition stmt_list\n");
+            match(t_if);
+            S.value = "if";
+            S.children = {condition()};
+            std::vector<AST_node> ifSubS = stmt_list();
+            cout << "t_end in t_if" << endl;
+            match(t_end);
+            S.children.insert(S.children.end(), 
+                                 ifSubS.begin(), ifSubS.end());
+            return S;
         }
         case t_while:{
-              match(t_while);
-              string line1 = "(while \n";
-              line1 = backSpace(line1, spaceVal);
-              line1 += condition();
-              line1 = backSpace(line1, spaceVal);
-              string line2 = stmt_list();
-              line2 = backSpace(line2, spaceVal);
-              spaceVal--;
-            
-              return line1 +"[\n"+ line2 + "])\n";
+            printf ("predict stmt --> while condition stmt_list\n");
+            match(t_while);
+            S.value = "while";
+            S.children = {condition()};
+            std::vector<AST_node> whileSubS = stmt_list();
+            match(t_end);
+            cout << "t_end in t_while" << endl;
+            S.children.insert(S.children.end(), 
+                                 whileSubS.begin(), whileSubS.end());
+            return S;
         }
-
-
         default:
+            cout << "stmt" << endl;
             error();
-            spaceVal--;
-            return "";
-      }
-    } catch(string e) {
-        return "";
     }
-}
-
-string condition() {
-    try{
-      spaceVal++;
-      string line2 = expr();
-      string line1 = expr();
-      spaceVal--;
-      return "(" + prefix(line2, line1) + ")\n";
-    }catch(string e){
-        
-        return "";
-    }
-}
-
-string expr() {
-  spaceVal++;
-  try{
-        string line1 = term();
-        string line2 = term_tail();
-        spaceVal--;
-        return prefix(line1, line2);
-    } catch(string e){
-        return "";
-    }
-    error();
-    spaceVal--;
-  return "";
 
 }
 
-
-string expr_tail() {
-  spaceVal++;
-  switch (input_token) {
-    case t_equal:
-    case t_notequal:
-    case t_smaller:
-    case t_greater:
-    case t_smallerequal:
-    case t_greaterequal:{
-        string line1 = relation_op();
-        string line2 = expr();
-        spaceVal--;
-        return line1 + " " + line2;
+AST_node condition() 
+{
+    AST_node C = AST_node("");
+    AST_node lexpr = expr();
+    printf ("predict condition --> expr r_op expr\n");
+    // relation op
+    switch(input_token){
+        case t_greater:
+            match(t_greater);
+            C.value = ">";
+            break;
+        case t_smaller:
+            match(t_smaller);
+            C.value = "<";
+            break;
+        case t_greaterequal:
+            match(t_greaterequal);
+            C.value = ">=";
+            break;
+        case t_smallerequal:
+            match(t_smallerequal);
+            C.value = "<=";
+            break;
+        case t_equal:
+            match(t_equal);
+            C.value = "==";
+            break;
+        case t_notequal:
+            match(t_notequal);
+            C.value = "!=";
+            break;
+        default:
+            cout<< "condition";
+            error();
     }
-    case t_id:
-    case t_read:
-    case t_write:
-    case t_eof:
-        spaceVal--;
-        return "";
-    default:
-        spaceVal--;
-        return "";
-  }
+
+    AST_node rexpr = expr();
+    C.children = {lexpr, rexpr};
+    return C;
 }
 
-string term_tail() {
-  spaceVal++;
-  switch (input_token) {
-    case t_add:
-    case t_sub:{
-        string line1 = add_op ();
-        line1 += " ";
-        line1 += term();
-        string line2 = term_tail();
-        spaceVal--;
-        return prefix(line1, line2);
-    }
-    case t_rparen:
-    case t_id:
-    case t_read:
-    case t_write:
-    case t_eof:
-      spaceVal--;
-      return "";
-    default:
-      return "";
-  }
-}
-
-string term() {
-  try{
-    spaceVal++;
-    string line1 = factor();
-    string line2 = factor_tail();
-    spaceVal--;
-    return prefix(line1, line2);
-    } catch (string e){
-      spaceVal--;
-    }
-    return "";
-
-}
-
-string factor_tail() {
-  spaceVal++;
-  switch (input_token) {
-    case t_mul:
-    case t_div:{
-        string line1 = mul_op();
-        string line2 = factor();
-        line1 += line2;
-        line1 += factor_tail();
-        spaceVal--;
-        return line1 + "";
-    }
-    case t_add:
-    case t_sub:
-    case t_rparen:
-    case t_id:
-    case t_read:
-    case t_write:
-    case t_eof:
-      spaceVal--;
-      return "";
-    default:
-      return "";
+AST_node expr() 
+{
+    switch (input_token) {
+        case t_id:
+        case t_literal:
+        case t_lparen:{
+            printf ("predict expr --> term term_tail\n");
+            AST_node T = term();
+            return term_tail(T);
+        }
+        default: 
+            cout << "expr";
+            error();
     }
 }
 
-string factor() {
-  spaceVal++;
-  switch (input_token) {
-    case t_id :{
-      match (t_id);
-      spaceVal--;
-      string line1 = "(id" + image + ")";
-      return line1;
+AST_node term() {
+    switch (input_token) {
+        case t_id:
+        case t_literal:
+        case t_lparen:{
+            printf ("predict term --> factor factor_tail\n");
+            AST_node F = factor();
+            return factor_tail(F);
+        }
+        default: 
+            cout << "term" << endl;
+            error();
     }
-    case t_literal:{
-      match (t_literal);
-      spaceVal--;
-      string line1 = "(lit" + image + ")";
-      return line1;
+}
+
+AST_node term_tail(AST_node T) 
+{
+    switch (input_token) {
+        case t_add:
+        case t_sub:{
+            printf ("predict term_tail --> add_op term term_tail\n");
+            AST_node AO = add_op();
+            AO.children = {T, term()};
+            return term_tail(AO);
+        }
+        case t_rparen:
+        case t_id:
+        case t_read:
+        case t_write:
+        case t_while:
+        case t_if:
+        case t_end:
+        case t_equal: 
+        case t_notequal: 
+        case t_smaller: 
+        case t_greater: 
+        case t_smallerequal:  
+        case t_greaterequal:
+        case t_eof:{
+            printf ("predict term_tail --> epsilon\n");
+            return T; /* epsilon production */
+        }
+        default: 
+        cout << "term_tail" << endl;
+        error ();
     }
-    case t_lparen:{
-        match (t_lparen);
-        string line1 = condition();
-        match (t_rparen);
-        spaceVal--;
-        return "(" + line1 + ")";
+}
+
+AST_node factor() 
+{
+    switch (input_token) {
+        case t_id :{
+            printf ("predict factor --> literal\n");
+            match (t_id);
+            return AST_node("id " + image);
+        }
+        case t_literal:{
+            printf ("predict factor --> id\n");
+            match (t_literal);
+            return AST_node("num " + image);
+        }
+        case t_lparen:{
+            printf ("predict factor --> lparen expr rparen\n");
+            match (t_lparen);
+            AST_node E = expr();
+            match (t_rparen);
+            return E;
+        }
+        default:
+            cout << "factor" << endl;
+            error();
     }
-    default:
-        spaceVal--;
-        return "";
-  }
+}
+AST_node factor_tail(AST_node F) {
+    switch (input_token) {
+        case t_mul:
+        case t_div:{
+            printf ("predict factor_tail --> mul_op factor factor_tail\n");
+            AST_node MO = mul_op();
+            MO.children = {F, factor()};
+            return factor_tail(MO);
+        }
+        case t_add:
+        case t_sub:
+        case t_rparen:
+        case t_id:
+        case t_read:
+        case t_write:
+        case t_while:
+        case t_if:
+        case t_end:
+        case t_equal: 
+        case t_notequal: 
+        case t_smaller: 
+        case t_greater: 
+        case t_smallerequal:  
+        case t_greaterequal:
+        case t_eof:
+            printf ("predict factor_tail --> epsilon\n");
+            return F;          /* epsilon production */
+        default: 
+            cout << "factor_tail ** " << F.value << endl;
+            error();
+    }
 }
 
 
-string relation_op(){
-  spaceVal++;
-  switch(input_token){
-    case t_equal:
-        match(t_equal);
-        spaceVal--;
-        return "= ";
-    case t_notequal:
-        match(t_notequal);
-        spaceVal--;
-        return "<> ";
-    case t_smaller:
-        match(t_smaller);
-        spaceVal--;
-        return "< ";
-    case t_greater:
-        match(t_greater);
-        spaceVal--;
-        return "> ";
-    case t_smallerequal:
-        match(t_smallerequal);
-        spaceVal--;
-        return "<= ";
-    case t_greaterequal:
-        match(t_greaterequal);
-        spaceVal--;
-        return ">= ";
-    default:
-        spaceVal--;
-        return "";
-  }
+AST_node add_op() {
+    switch (input_token) {
+        case t_add:
+            printf ("predict add_op --> add\n");
+            match (t_add);
+            return AST_node("+");
+        case t_sub:
+            printf ("predict add_op --> sub\n");
+            match (t_sub);
+            return AST_node("-");
+        default: 
+            cout << "add_op";
+            error();
+    }
 }
 
-string add_op() {
-  spaceVal++;
-  switch (input_token) {
-    case t_add:
-        match(t_add);
-        spaceVal--;
-        return "+ ";
-    case t_sub:
-        match(t_sub);
-        spaceVal--;
-        return "- ";
-    default:
-        spaceVal--;
-        return "";
-  }
-}
-
-string mul_op() {
-  spaceVal++;
-  switch (input_token) {
-    case t_mul:
-        match(t_mul);
-        spaceVal--;
-        return "* ";
-    case t_div:
-        match(t_div);
-        spaceVal--;
-        return "/ ";
-    default:
-        spaceVal--;
-        return "";
-  }
+AST_node mul_op() {
+    switch (input_token) {
+        case t_mul:
+            printf ("predict mul_op --> mul\n");
+            match (t_mul);
+            return AST_node("*");
+        case t_div:
+            printf ("predict mul_op --> div\n");
+            match (t_div);
+            return AST_node("/");
+        default: 
+            cout << "mul_op";
+            error();
+    }
 }
 
 int main() {
-    
+    cout << "hello world" << endl;
     input_token = scan();
-    cout << program();
+    cout << input_token << " in main" << endl;
+    AST_node P = program();
     return 0;
 }

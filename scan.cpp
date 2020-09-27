@@ -12,7 +12,7 @@ using std::endl;
 using std::noskipws;
 
 
-char token_image[100];
+char token_image[128];
 string image;
 
 std::string getImage(){
@@ -22,88 +22,126 @@ std::string getImage(){
 token scan() {
     static char c = ' ';
         /* next available char; extra (int) width accommodates EOF */
-    int i = 0;              /* index into token_image */
-    /* skip white space */
-    /*if (!cin.get(c)) return t_eof;
-    while (isspace(c)) {
-        if (!cin.get(c)) return t_eof;
-    }*/
+         /* index into token_image */
+    int i = 0; 
 	do{
-	if (!cin.get(c)) return t_eof;
-	}while(isspace(c));
-    if (isalpha(c)) { //TODO
-        do {
-            token_image[i++] = c;
-            if(!cin.get(c)) break;
-        } while (isalpha(c) || isdigit(c) || c == '_');
-        token_image[i] = '\0';
-        if(token_image==string("read")) return t_read;
-        else if (token_image==string("write")) return t_write;
-        else if (token_image==string("do")) return t_do;
-        else if (token_image==string("eof")) return t_eof;
-        else if (token_image == string("if"))
-            return t_if;
-        else if (token_image == string("while"))
-            return t_while;
-           else if (token_image == string("end"))
-            return t_end;
-        
-        else{
-          image = token_image;
-          return t_id;
+    	if(!cin.get(c)){
+            return t_eof;
         }
-          // literal = token_image;
-    }
-    else if (isdigit(c)) { //TODO
+	} while(isspace(c));
+
+    bool isAlldigit = true;
+
+    if (isalpha(c) || isdigit(c)) {
         do {
             token_image[i++] = c;
-            cin.get(c);
-        } while (isdigit(c));
-        token_image[i] = '\0';
-        cout << token_image << endl;
-        
-        image = token_image;
-        return t_literal;
-    }
-    else switch (c) {
-        case '+': cin.get(c); return t_add;
-        case '-': cin.get(c); return t_sub;
-        case '*': cin.get(c); return t_mul;
-        case '/': cin.get(c); return t_div;
-        case '(': cin.get(c); return t_lparen;
-        case ')': cin.get(c); return t_rparen;
-        //Relation operators added
-        case ':':
-          cin.get(c);
-          if (c == '='){
-              cin.get(c);
-              return t_gets;
+            if (!isdigit(c)) {
+                isAlldigit = false;
             }
-          cout << "error\n";
-        case '<':
-            cin.get(c);
-            if (c == '>'){
+            if(!cin.get(c)){
+                break;
+            }
+        } while (!isspace(c) && (isalpha(c) || isdigit(c) || c == '_'));
+
+        token_image[i] = '\0';
+        cout << "token_image " <<token_image << endl;
+
+        if(token_image == string("read")){
+            cout << "scanner t_read" << endl;
+            return t_read;
+        }
+        else if (token_image == string("write")){
+            cout << "scanner t_write" << endl;
+            return t_write;
+        }
+        else if (token_image == string("if")){
+            cout << "scanner t_if" << endl;
+            return t_if;
+        }
+        else if (token_image == string("while")){
+            cout << "scanner t_while" << endl;
+            return t_while;
+        }
+        else if (token_image == string("end")){
+            cout << "scanner t_end" << endl;
+            return t_end;
+        }
+        else{
+            image = token_image;
+            if (isAlldigit){
+                cout << "scanner t_literal" << endl;
+                return t_literal;
+            }
+            else{
+                cout << "scanner t_id" << endl;
+                return t_id;
+            }
+        }   
+    }
+    else {
+        //cin.get(c); ?
+        switch (c) {
+            case '+': 
+                return t_add;
+            case '-': 
+                return t_sub;
+            case '*': 
+                return t_mul;
+            case '/': 
+                return t_div;
+            case '(': 
+                return t_lparen;
+            case ')': 
+                return t_rparen;
+            case ':':
                 cin.get(c);
-                return t_notequal;
-            }else if(c == '='){
+                if (c == '='){
+                    return t_gets;
+                } 
+                cout << "scanning error 1\n";
+
+            //Relation operators
+                
+            case '<':
                 cin.get(c);
-                return t_smallerequal;
-            }else return t_smaller;
-        case '>':
-            cin.get(c);
-            if(c == '='){
-              cin.get(c);
-                return t_greaterequal;
-            }else return t_greater;
-        case '=':
-            cin.get(c);
-            if(c == '='){
-              cin.get(c);
-                return t_equal;
-            }//remove double equal
-            cout << "error\n";
-        default:
-            cout << "error\n";
-            exit(1);
+                cout << "here " << c << endl;
+                if (c == '>'){
+                    cout << "scanner t_notequal" << endl;
+                    return t_notequal;
+                }else if(c == '='){
+                    cout << "scanner t_smallerequal" << endl;
+                    return t_smallerequal;
+                }else{
+                    cout << "scanner t_smaller" << endl;
+                    return t_smaller;
+                }
+            case '>':
+                cin.get(c);
+                if(c == '='){
+                    cout << "scanner t_greaterequal" << endl;
+                    return t_greaterequal;
+                }else{
+                    cout << "scanner t_greater" << endl;
+                    return t_greater;
+                }
+            case '=':
+                cin.get(c);
+                if(c == '='){
+                    cout << "scanner t_equal" << endl;
+                    return t_equal;
+                }//remove double equal
+
+            // end of file
+
+            case '$':
+                cin.get(c);
+                if(c == '$'){
+                    cout << "scanner t_eof" << endl;
+                    return t_eof;
+                }
+            default:
+                cout << "scanning error 2\n";
+                exit(1);
+        }
     }
 }
