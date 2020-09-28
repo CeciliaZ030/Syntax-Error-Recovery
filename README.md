@@ -15,7 +15,9 @@ This submission includes three C++ files including scan.h, scan.cpp, and parse.c
 We extended the language with if and while statements and implemented the program with the given grammar.
 
 P	→ 	SL $$
+
 SL	→ 	S SL  |  ε
+
 S	→ 	id := E  |  read id  |  write E  |  if C SL end  |  while C SL end
 
 C	→ 	E ro E
