@@ -1,3 +1,4 @@
+#include <vector>
 #include <iostream>
 #include <ios>
 #include <cstdlib>
@@ -29,7 +30,7 @@ void error () {
 }
 
 void match (token expected) {
-    cout << "   in match" << endl;
+    cout << "   in match " << expected << " " << input_token << endl;
     if (input_token == expected){
         cout << "   input_token == expected" << endl;
         if (input_token == t_id || input_token == t_literal){
@@ -110,6 +111,7 @@ AST_node program()
             std::vector<AST_node> SL = stmt_list();
             match(t_eof);
             P.children = SL;
+            P.printMode = 3;
             cout << "YEAH!!!" << endl;
             return P;
         }
@@ -134,6 +136,7 @@ std::vector<AST_node> stmt_list()
             std::vector<AST_node> tail = stmt_list();
             SL.insert(SL.end(), //TODO: possibly empty tail here
                       tail.begin(), tail.end());
+
             return SL;
         }
         case t_eof: {
@@ -159,7 +162,8 @@ AST_node stmt()
             match(t_id);
             match(t_gets);
             S.value = ":=";
-            S.children = {AST_node("id: " + image), expr()};
+            S.children = {AST_node("id:" + image), expr()};
+            S.printMode = 1;
             return S;
         }
         case t_read:{
@@ -168,7 +172,8 @@ AST_node stmt()
             cout << "match(t_id);" << endl;
             match(t_id);
             S.value = "read";
-            S.children = {AST_node("id: " + image)};
+            S.children = {AST_node("id:" + image)};
+            S.printMode = 1;
             return S;
         }
         case t_write:{
@@ -176,6 +181,8 @@ AST_node stmt()
             match(t_write);
             S.value = "write";
             S.children = {expr()};
+            S.printMode = 1;
+            cout << "here";
             return S;
         }
         case t_if:{
@@ -184,6 +191,7 @@ AST_node stmt()
             S.value = "if";
             S.children = {condition()};
             std::vector<AST_node> ifSubS = stmt_list();
+            S.printMode = 2;
             cout << "t_end in t_if" << endl;
             match(t_end);
             S.children.insert(S.children.end(), 
@@ -197,6 +205,7 @@ AST_node stmt()
             S.children = {condition()};
             std::vector<AST_node> whileSubS = stmt_list();
             match(t_end);
+            S.printMode = 2;
             cout << "t_end in t_while" << endl;
             S.children.insert(S.children.end(), 
                                  whileSubS.begin(), whileSubS.end());
@@ -247,19 +256,32 @@ AST_node condition()
 
     AST_node rexpr = expr();
     C.children = {lexpr, rexpr};
+    C.printMode = 0;
     return C;
 }
 
 AST_node expr() 
 {
+    AST_node E = AST_node("");
+    bool isParan = false;
     switch (input_token) {
+        case t_lparen:
+            isParan = true;
         case t_id:
         case t_literal:
-        case t_lparen:{
             printf ("predict expr --> term term_tail\n");
-            AST_node T = term();
-            return term_tail(T);
-        }
+
+            if (isParan)
+                match(t_lparen);
+
+            E = term();
+            E.printMode = 0;
+
+            if (isParan)
+                match(t_rparen);
+
+            cout << "return from E" << endl;
+            return term_tail(E);
         default: 
             cout << "expr";
             error();
@@ -267,14 +289,15 @@ AST_node expr()
 }
 
 AST_node term() {
+    AST_node F = AST_node("");
     switch (input_token) {
         case t_id:
         case t_literal:
-        case t_lparen:{
+        case t_lparen:
             printf ("predict term --> factor factor_tail\n");
-            AST_node F = factor();
+            F = factor();
+            F.printMode = 0;
             return factor_tail(F);
-        }
         default: 
             cout << "term" << endl;
             error();
@@ -283,14 +306,15 @@ AST_node term() {
 
 AST_node term_tail(AST_node T) 
 {
+    AST_node TT = AST_node("");
     switch (input_token) {
         case t_add:
-        case t_sub:{
+        case t_sub:
             printf ("predict term_tail --> add_op term term_tail\n");
-            AST_node AO = add_op();
-            AO.children = {T, term()};
-            return term_tail(AO);
-        }
+            TT = add_op();
+            TT.printMode = 0;
+            TT.children = {T, term()};
+            return term_tail(TT);
         case t_rparen:
         case t_id:
         case t_read:
@@ -308,9 +332,10 @@ AST_node term_tail(AST_node T)
             printf ("predict term_tail --> epsilon\n");
             return T; /* epsilon production */
         }
-        default: 
-        cout << "term_tail" << endl;
-        error ();
+        default:{
+            cout << "term_tail" << endl;
+            error ();
+        }
     }
 }
 
@@ -320,17 +345,18 @@ AST_node factor()
         case t_id :{
             printf ("predict factor --> literal\n");
             match (t_id);
-            return AST_node("id " + image);
+            return AST_node("id:" + image);;
         }
         case t_literal:{
             printf ("predict factor --> id\n");
             match (t_literal);
-            return AST_node("num " + image);
+            return AST_node("num:" + image);;
         }
         case t_lparen:{
             printf ("predict factor --> lparen expr rparen\n");
             match (t_lparen);
             AST_node E = expr();
+            E.printMode = 0;
             match (t_rparen);
             return E;
         }
@@ -339,15 +365,18 @@ AST_node factor()
             error();
     }
 }
-AST_node factor_tail(AST_node F) {
+AST_node factor_tail(AST_node F) 
+{
+    AST_node FT = AST_node("");
+
     switch (input_token) {
         case t_mul:
-        case t_div:{
+        case t_div:
             printf ("predict factor_tail --> mul_op factor factor_tail\n");
-            AST_node MO = mul_op();
-            MO.children = {F, factor()};
-            return factor_tail(MO);
-        }
+            FT = mul_op();
+            FT.children = {F, factor()};
+            FT.printMode = 0;
+            return factor_tail(FT);
         case t_add:
         case t_sub:
         case t_rparen:
@@ -410,5 +439,6 @@ int main() {
     input_token = scan();
     cout << input_token << " in main" << endl;
     AST_node P = program();
+    P.printAST(0);
     return 0;
 }

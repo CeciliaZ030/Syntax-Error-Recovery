@@ -19,6 +19,11 @@ std::string getImage(){
   return " \""+image+"\"";
 }
 
+void indent(int level){
+    for(int i = 0; i < level; i++)
+    cout << " ";
+}
+
 token scan() {
     static char c = ' ';
         /* next available char; extra (int) width accommodates EOF */
