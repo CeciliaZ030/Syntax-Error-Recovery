@@ -13,7 +13,7 @@ Please use the following command to run our program.
 $ g++ -std=c++11 parse.cpp scan.cpp -o parse
 $ ./parse < ./input.txt
 
-Important: Please note that there should be spaces between each symbol in the input file for the program; for instance, "a+b" as a part of the input should be write as "a + b" in the input file for the scanner to process. 
+Important: Please note that there should be spaces between each symbol in the input file for the program; for instance, "a+b" as a part of the input should be write as "a + b " in the input file for the scanner to process. 
 
 Our program, scan.cpp relied on spaces to identify tokens, and variables that were not separated by space cannot be processed by the programmer and would not lead to expected outputs.
 
