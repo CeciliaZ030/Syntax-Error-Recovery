@@ -49,22 +49,17 @@ token scan() {
         } while (!isspace(c) && (isalpha(c) || isdigit(c) || c == '_'));
 
         token_image[i] = '\0';
-        cout << "token_image " <<token_image << endl;
 
         if(token_image == string("read")){
-            cout << "scanner t_read" << endl;
             return t_read;
         }
         else if (token_image == string("write")){
-            cout << "scanner t_write" << endl;
             return t_write;
         }
         else if (token_image == string("if")){
-            cout << "scanner t_if" << endl;
             return t_if;
         }
         else if (token_image == string("while")){
-            cout << "scanner t_while" << endl;
             return t_while;
         }
         else if (token_image == string("end")){
@@ -87,6 +82,7 @@ token scan() {
         //cin.get(c); ?
         switch (c) {
             case '+': 
+                cout << "scan t_rparen" << endl;
                 return t_add;
             case '-': 
                 return t_sub;
@@ -97,6 +93,7 @@ token scan() {
             case '(': 
                 return t_lparen;
             case ')': 
+                cout << "scan t_rparen" << endl;
                 return t_rparen;
             case ':':
                 cin.get(c);

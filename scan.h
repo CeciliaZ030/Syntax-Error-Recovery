@@ -16,6 +16,7 @@ extern char token_image[128];
 extern std::string getImage();
 extern token scan();
 extern void indent(int level);
+extern bool contains(std::vector<token> set, token t);
 
 class AST_node
 {
@@ -49,15 +50,15 @@ class AST_node
 		            cout << "(" << value << endl;
 		            level++;
 		            indent(level);
-		            cout << "[" << level << endl;
+		            cout << "[" << endl;
 		            level++;
 		            for (std::vector<AST_node>::iterator it = children.begin(); it != children.end(); ++it)
 		                it -> printAST(level);
 		            indent(level--);
-		            cout << "]" << level << endl;
+		            cout << "]" << endl;
 		            level--;
 		            indent(level);
-		            cout << ")" << value << endl;
+		            cout << ")" << endl;
 		            return;
 
         		case 0:
@@ -92,29 +93,33 @@ class AST_node
 						)
 		        	*/
         			indent(level); 
-		            cout << "(" << value  << level << endl;
+		            cout << "(" << value << endl;
 
 		            level++;
 		            indent(level);
+
 		            cout << "(";
-		            std::vector<AST_node>::iterator it = children.begin();
-		            it -> printAST(level);
+		            children[0].printAST(level);
 		            cout << ")" << endl;
 
 		            indent(level);
-		            cout << "[" << level << endl;
+		            cout << "[" << endl;
 		            level++;
-		            while (it != children.end()){
-		            	it++;
-		            	it -> printAST(level);
+		            for(int i = 1; i < children.size(); i++){
+		            	children[i].printAST(level);
 		            }
+
 		            level--;
 		            indent(level);
-		            cout << "]" << level << endl;
+		            cout << "]" << endl;
 		            level--;
 		           	indent(level);
-		            cout << ")" << level << endl;
+		            cout << ")" << endl;
 		            return;
+
+		        default:
+		        	cout << "exit in default " << value << endl;
+		        	exit(1);
 
         	}
         	exit(1);
