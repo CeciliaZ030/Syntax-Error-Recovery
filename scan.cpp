@@ -73,17 +73,14 @@ token scan() {
             return t_while;
         }
         else if (token_image == string("end")){
-            cout << "scanner t_end" << endl;
             return t_end;
         }
         else{
             image = token_image;
             if (isAlldigit){
-                cout << "scanner t_literal" << endl;
                 return t_literal;
             }
             else{
-                cout << "scanner t_id" << endl;
                 if (!containsS(variables, image)){
                     variables.push_back(image);
                 }
@@ -105,7 +102,6 @@ token scan() {
             case '(': 
                 return t_lparen;
             case ')': 
-                cout << "scan t_rparen" << endl;
                 return t_rparen;
             case ':':
                 cin.get(c);
@@ -118,30 +114,23 @@ token scan() {
                 
             case '<':
                 cin.get(c);
-                cout << "here " << c << endl;
                 if (c == '>'){
-                    cout << "scanner t_notequal" << endl;
                     return t_notequal;
                 }else if(c == '='){
-                    cout << "scanner t_smallerequal" << endl;
                     return t_smallerequal;
                 }else{
-                    cout << "scanner t_smaller" << endl;
                     return t_smaller;
                 }
             case '>':
                 cin.get(c);
                 if(c == '='){
-                    cout << "scanner t_greaterequal" << endl;
                     return t_greaterequal;
                 }else{
-                    cout << "scanner t_greater" << endl;
                     return t_greater;
                 }
             case '=':
                 cin.get(c);
                 if(c == '='){
-                    cout << "scanner t_equal" << endl;
                     return t_equal;
                 }//remove double equal
 
@@ -150,7 +139,6 @@ token scan() {
             case '$':
                 cin.get(c);
                 if(c == '$'){
-                    cout << "scanner t_eof" << endl;
                     return t_eof;
                 }
             default:

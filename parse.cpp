@@ -274,7 +274,6 @@ AST_node condition()
             break;
         default:
             hasError = true;
-            cout << "hasError ";
             cout << "Try to recover in Condition " << endl;
             while (true) {
                 if (containsT(FIRST_COND, input_token))
@@ -306,7 +305,6 @@ AST_node expr()
             return term_tail(T);
         default: 
             hasError = true;
-            cout << "hasError expr " << endl;
             cout << "Try to recover in Expr " << endl;
             while (true) {
                 if (containsT(FIRST_EXPR, input_token))
@@ -393,7 +391,6 @@ AST_node factor()
             E.printMode = 0;
             if (!match (t_rparen)){
                 hasError = true;
-                cout << "++++++ t_rparen +++++"<<endl;
             }
             return E;
             
@@ -444,17 +441,13 @@ AST_node add_op() {
     switch (input_token) {
         case t_add:
             printf ("predict add_op --> add\n");
-            if (!match (t_add)){
+            if (!match (t_add))
                 hasError = true;
-                cout << "hasError";
-            }
             return AST_node("+");
         case t_sub:
             printf ("predict add_op --> sub\n");
-            if (!match (t_sub)){
+            if (!match (t_sub))
                 hasError = true;
-                cout << "hasError";
-            }
             return AST_node("-");
         default: 
             cout << "In add_op ";
@@ -466,17 +459,13 @@ AST_node mul_op() {
     switch (input_token) {
         case t_mul:
             printf ("predict mul_op --> mul\n");
-            if(!match (t_mul)){
+            if(!match (t_mul))
                 hasError = true;
-                cout << "hasError";
-            }
             return AST_node("*");
         case t_div:
             printf ("predict mul_op --> div\n");
-            if(!match (t_div)){
+            if(!match (t_div))
                 hasError = true;
-                cout << "hasError";
-            }
             return AST_node("/");
         default: 
             cout << "In mul_op ";
