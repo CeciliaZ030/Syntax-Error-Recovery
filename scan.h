@@ -17,6 +17,8 @@ extern std::string getImage();
 extern token scan();
 extern void indent(int level);
 extern bool contains(std::vector<token> set, token t);
+extern std::vector<std::string> getVariables();
+bool containsS(std::vector<std::string> set, std::string t);
 
 class AST_node
 {

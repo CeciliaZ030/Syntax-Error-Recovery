@@ -14,15 +14,25 @@ using std::noskipws;
 
 char token_image[128];
 string image;
+static std::vector<std::string> variables;
 
 std::string getImage(){
-  return " \""+image+"\"";
+  return image;
+}
+
+std::vector<std::string> getVariables(){
+  return variables;
+}
+
+bool containsS(std::vector<string> set, string t){
+    return std::find(set.begin(), set.end(), t) != set.end();
 }
 
 void indent(int level){
     for(int i = 0; i < level; i++)
     cout << " ";
 }
+
 
 token scan() {
     static char c = ' ';
@@ -74,6 +84,9 @@ token scan() {
             }
             else{
                 cout << "scanner t_id" << endl;
+                if (!containsS(variables, image)){
+                    variables.push_back(image);
+                }
                 return t_id;
             }
         }   
@@ -82,7 +95,6 @@ token scan() {
         //cin.get(c); ?
         switch (c) {
             case '+': 
-                cout << "scan t_rparen" << endl;
                 return t_add;
             case '-': 
                 return t_sub;
@@ -147,3 +159,5 @@ token scan() {
         }
     }
 }
+
+

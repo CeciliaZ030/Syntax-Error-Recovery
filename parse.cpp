@@ -11,10 +11,11 @@ using std::cin;
 using std::cout;
 using std::endl;
 
-const char* names[] = {"read", "write", "id", "literal", "gets", "if",
-"do", "equal", "notequal", "smaller",
-"greater", "smallerequal","greaterequal",
-"add", "sub", "mul", "div", "lparen", "rparen", "eof"};
+const char* names[] = { "t_read", "t_write", "t_if", "t_while", "t_end",
+    "t_literal", "t_id", "t_gets", "t_do",
+    "t_add", "t_sub", "t_mul", "t_div", "t_lparen", "t_rparen", 
+    "t_equal", "t_notequal", "t_smaller", "t_greater", "t_smallerequal", "t_greaterequal",
+    "t_eof"};
 
 const std::vector<token> FIRST_STMT = {t_id, t_read, t_write, t_if, t_while};
 const std::vector<token> FIRST_STMTLIST = {t_id, t_read, t_write, t_if, t_while};
@@ -30,32 +31,41 @@ const std::vector<token> FOLLOW_EXPR = {t_rparen, t_equal, t_notequal, t_smaller
 static token input_token;
 static string image = "";
 static bool hasError = false;
-
+static std::vector<string> uninitVar;
+static token prev_token;
+static token next_token;
 
 void error() {
     cout << "Syntax Error" << endl;
     exit (1);
 }
 
-bool contains(std::vector<token> set, token t){
+bool containsT(std::vector<token> set, token t){
     return std::find(set.begin(), set.end(), t) != set.end();
 }
 
 
 bool match (token expected) {
-    cout << "   in match " << expected << " " << input_token << endl;
     if (input_token == expected){
-        cout << "   input_token == expected" << endl;
         if (input_token == t_id || input_token == t_literal){
             image = getImage();
-            cout << "   match" << image << endl;
+            cout << "   match " << image << endl;
+            if (input_token == t_id) {
+                std::vector<string> vars = getVariables();
+                if (!containsS(vars, image) && prev_token != t_read){
+                    cout << "Found uninitialized variables: " << image << endl;
+                    uninitVar.push_back(image);
+                    hasError = true;
+                }
+            }
         }
+        prev_token = input_token;
         input_token = scan();
-        cout << "   scan next and get " << input_token << endl;
         return true;
     } 
     else{
-        cout << "Umatch Syntax with " << input_token << ". " << "Expect: " << expected << endl;
+        cout << "Umatch Syntax with " << names[input_token] << ". " 
+             << "Expect: " << names[expected] << endl;
         return false;
     }
 }
@@ -95,15 +105,17 @@ AST_node program()
                 return P;
             }
         default:
+            hasError = true;
+            cout << "hasError ";
             cout << "Try to recover in Program " << endl;
             while (true) {
-                if (contains(FIRST_STMTLIST, input_token)){
+                if (containsT(FIRST_STMTLIST, input_token)){
                     SL = stmt_list();
                     P.children = SL;
                     P.printMode = 3;
                     return P;
                 }
-                else if (contains(FOLLOW_STMTLIST, input_token) || input_token == t_eof)
+                else if (containsT(FOLLOW_STMTLIST, input_token) || input_token == t_eof)
                     return AST_node("ERROR");
                 else
                     input_token = scan();
@@ -115,12 +127,13 @@ std::vector<AST_node> stmt_list()
 {
     std::vector<AST_node> SL;
     std::vector<AST_node> tail;
+    cout << names[input_token] << endl;
     switch (input_token) {
         case t_id:
         case t_read:
         case t_if:
         case t_while:
-        case t_write: 
+        case t_write:
             printf ("predict stmt_list --> stmt stmt_list\n");
 
             SL.push_back(stmt());
@@ -138,11 +151,13 @@ std::vector<AST_node> stmt_list()
             return {};
         }
         default:
+            hasError = true;
+            cout << "hasError ";
             cout << "Try to recover in Stmt_list " << endl;
             while (true) {
-                if (contains(FIRST_STMTLIST, input_token))
+                if (containsT(FIRST_STMTLIST, input_token))
                     return stmt_list();
-                else if (contains(FOLLOW_STMTLIST, input_token) || input_token == t_eof)
+                else if (containsT(FOLLOW_STMTLIST, input_token) || input_token == t_eof)
                     return {AST_node("ERROR")};
                 else
                     input_token = scan();
@@ -154,26 +169,26 @@ AST_node stmt()
 {
     AST_node S = AST_node("");
     switch (input_token) {
-        case t_id: {
+        case t_id: 
             printf ("predict stmt --> id_gets expr\n");
             if (match(t_id) && match(t_gets)){
                 S.value = ":=";
+                image = "\"" + image + "\"";
                 S.children = {AST_node("id:" + image), expr()};
                 S.printMode = 1;
                 return S;
             }
-        }
-        case t_read:{
+        case t_read:
             printf ("predict stmt --> read id\n");
             if (match(t_read) && match(t_id)) {
-                match(t_id);
                 S.value = "read";
+                image = "\"" + image + "\"";
                 S.children = {AST_node("id:" + image)};
                 S.printMode = 1;
+                return S;
             }
-            return S;
-        }
-        case t_write:{
+        
+        case t_write:
             printf ("predict stmt --> write expr\n");
             if (match(t_write)) {
                 S.value = "write";
@@ -181,41 +196,43 @@ AST_node stmt()
                 S.printMode = 1;
                 return S;
             }
-        }
-        case t_if:{
+        
+        case t_if:
             printf ("predict stmt --> if condition stmt_list\n");
-            match(t_if);
-            S.value = "if";
-            S.children = {condition()};
-            std::vector<AST_node> ifSubS = stmt_list();
-            S.printMode = 2;
-            if (match(t_end)){
-                S.children.insert(S.children.end(), 
-                                     ifSubS.begin(), ifSubS.end());
-                return S;
+            if (match(t_if)){
+                S.value = "if";
+                S.children = {condition()};
+                std::vector<AST_node> ifSubS = stmt_list();
+                S.printMode = 2;
+                if (match(t_end)){
+                    S.children.insert(S.children.end(), 
+                                         ifSubS.begin(), ifSubS.end());
+                    return S;
+                }
             }
-    
-        }
-        case t_while:{
+        
+        case t_while:
             printf ("predict stmt --> while condition stmt_list\n");
-            match(t_while);
-            S.value = "while";
-            S.children = {condition()};
-            std::vector<AST_node> whileSubS = stmt_list();
-            S.printMode = 2;
-            if (match(t_end)){
-                S.children.insert(S.children.end(), 
-                                     whileSubS.begin(), whileSubS.end());
-                return S;
+            if (match(t_while)){
+                S.value = "while";
+                S.children = {condition()};
+                std::vector<AST_node> whileSubS = stmt_list();
+                S.printMode = 2;
+                if (match(t_end)){
+                    S.children.insert(S.children.end(), 
+                                         whileSubS.begin(), whileSubS.end());
+                    return S;
+                }
             }
     
-        }
         default:
+            hasError = true;
+            cout << "hasError ";
             cout << "Try to recover in Stmt " << endl;
             while (true) {
-                if (contains(FIRST_STMT, input_token))
+                if (containsT(FIRST_STMT, input_token))
                     return stmt();
-                else if (contains(FOLLOW_STMT, input_token) || input_token == t_eof)
+                else if (containsT(FOLLOW_STMT, input_token) || input_token == t_eof)
                     return AST_node("ERROR");
                 else
                     input_token = scan();
@@ -256,11 +273,13 @@ AST_node condition()
             C.value = "!=";
             break;
         default:
+            hasError = true;
+            cout << "hasError ";
             cout << "Try to recover in Condition " << endl;
             while (true) {
-                if (contains(FIRST_COND, input_token))
+                if (containsT(FIRST_COND, input_token))
                     return condition();
-                else if (contains(FOLLOW_COND, input_token) || input_token == t_eof)
+                else if (containsT(FOLLOW_COND, input_token) || input_token == t_eof)
                     return AST_node("ERROR");
                 else
                     input_token = scan();
@@ -279,20 +298,20 @@ AST_node expr()
     bool isParan = false;
     switch (input_token) {
         case t_lparen:
-            isParan = true;
         case t_id:
         case t_literal:
             printf ("predict expr --> term term_tail\n");
             T = term();
             T.printMode = 0;
-            cout << "return from E" << endl;
             return term_tail(T);
         default: 
+            hasError = true;
+            cout << "hasError expr " << endl;
             cout << "Try to recover in Expr " << endl;
             while (true) {
-                if (contains(FIRST_STMT, input_token))
+                if (containsT(FIRST_EXPR, input_token))
                     return expr();
-                else if (contains(FOLLOW_STMT, input_token) || input_token == t_eof)
+                else if (containsT(FOLLOW_EXPR, input_token) || input_token == t_eof)
                     return {AST_node("ERROR")};
                 else
                     input_token = scan();
@@ -312,7 +331,6 @@ AST_node term() {
             F.printMode = 0;
             return factor_tail(F);
         default: 
-            cout << "In term " << endl;
             error();
     }
 }
@@ -354,22 +372,31 @@ AST_node factor()
 {
     switch (input_token) {
         case t_id :{
-            printf ("predict factor --> id\n");
-            match (t_id);
-            return AST_node("id:" + image);;
+            printf ("predict actor --> id\n");
+            if (!match (t_id))
+                hasError = true;
+            image = "\"" + image + "\"";
+            return AST_node("id:" + image);
         }
         case t_literal:{
             printf ("predict factor --> literal\n");
-            match (t_literal);
-            return AST_node("num:" + image);;
+            if (!match (t_literal))
+                hasError = true;
+            image = "\"" + image + "\"";
+            return AST_node("num:" + image);
         }
         case t_lparen:{
             printf ("predict factor --> lparen expr rparen\n");
-            match (t_lparen);
+            if (!match (t_lparen))
+                hasError = true;
             AST_node E = expr();
             E.printMode = 0;
-            match (t_rparen);
+            if (!match (t_rparen)){
+                hasError = true;
+                cout << "++++++ t_rparen +++++"<<endl;
+            }
             return E;
+            
         }
         default:
             cout << "In factor ";
@@ -417,11 +444,17 @@ AST_node add_op() {
     switch (input_token) {
         case t_add:
             printf ("predict add_op --> add\n");
-            match (t_add);
+            if (!match (t_add)){
+                hasError = true;
+                cout << "hasError";
+            }
             return AST_node("+");
         case t_sub:
             printf ("predict add_op --> sub\n");
-            match (t_sub);
+            if (!match (t_sub)){
+                hasError = true;
+                cout << "hasError";
+            }
             return AST_node("-");
         default: 
             cout << "In add_op ";
@@ -433,11 +466,17 @@ AST_node mul_op() {
     switch (input_token) {
         case t_mul:
             printf ("predict mul_op --> mul\n");
-            match (t_mul);
+            if(!match (t_mul)){
+                hasError = true;
+                cout << "hasError";
+            }
             return AST_node("*");
         case t_div:
             printf ("predict mul_op --> div\n");
-            match (t_div);
+            if(!match (t_div)){
+                hasError = true;
+                cout << "hasError";
+            }
             return AST_node("/");
         default: 
             cout << "In mul_op ";
@@ -448,14 +487,20 @@ AST_node mul_op() {
 int main() {
     cout << "hello world" << endl;
     input_token = scan();
-    cout << input_token << " in main" << endl;
     AST_node P = program();
 
     cout << endl;
     if (!hasError)
         cout << "Tree" << endl;
-    else
+    else{
+        if (!uninitVar.empty()){
+            cout << "Exist uninitialized variables: ";
+            for (string v : uninitVar)
+                cout << v << ", ";
+            cout << endl;
+        }
         cout << "Error Tree" << endl;
+    }
 
     P.printAST(0);
     return 0;
